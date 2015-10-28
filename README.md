@@ -19,7 +19,10 @@ import (
 
 func main() {
 	// Simple example of using this library. Run this as follows
-	// godep go run main/main.go myhost /tmp/myhost.sock
+	//
+	//     go run main/main.go myhost /tmp/myhost.sock
+	//
+	// Then run `docker -H unix:///tmp/myhost.sock ps`
 	if err := run(); err != nil {
 		logrus.Fatal(err)
 	}
