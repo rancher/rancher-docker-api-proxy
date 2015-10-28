@@ -39,7 +39,7 @@ func (p *Proxy) getSocket(url string) (net.Listener, error) {
 	parts := strings.SplitN(url, "://", 2)
 	if len(parts) == 2 {
 		proto = parts[0]
-		address = parts[0]
+		address = parts[1]
 	}
 
 	return net.Listen(proto, address)
