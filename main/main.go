@@ -22,7 +22,9 @@ func main() {
 }
 
 func run() error {
-	logrus.SetLevel(logrus.DebugLevel)
+	if os.Getenv("PROXY_DEBUG") != "" {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 
 	client, err := rancher.NewRancherClient(&rancher.ClientOpts{
 		Url:       os.Getenv("CATTLE_URL"),
