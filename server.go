@@ -1,6 +1,7 @@
 package dockerapiproxy
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -22,6 +23,7 @@ type IoOps interface {
 type Proxy struct {
 	client       *rancher.RancherClient
 	host, listen string
+	TlsConfig    *tls.Config
 }
 
 func NewProxy(client *rancher.RancherClient, host, listen string) *Proxy {
@@ -42,7 +44,17 @@ func (p *Proxy) getSocket(url string) (net.Listener, error) {
 		address = parts[1]
 	}
 
-	return net.Listen(proto, address)
+	l, err := net.Listen(proto, address)
+	if err != nil {
+		return nil, err
+	}
+
+	if proto == "tcp" && p.TlsConfig != nil {
+		p.TlsConfig.NextProtos = []string{"http/1.1"}
+		l = tls.NewListener(l, p.TlsConfig)
+	}
+
+	return l, err
 }
 
 func (p *Proxy) ListenAndServe() error {
