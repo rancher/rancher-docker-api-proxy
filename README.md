@@ -20,7 +20,7 @@ import (
 func main() {
 	// Simple example of using this library. Run this as follows
 	//
-	//     go run main/main.go myhost /tmp/myhost.sock
+	//     go run main/main.go myhost unix:///tmp/myhost.sock
 	//
 	// Then run `docker -H unix:///tmp/myhost.sock ps`
 	if err := run(); err != nil {

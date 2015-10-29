@@ -1,10 +1,12 @@
 package dockerapiproxy
 
 import (
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/Sirupsen/logrus"
@@ -21,6 +23,7 @@ type IoOps interface {
 type Proxy struct {
 	client       *rancher.RancherClient
 	host, listen string
+	TlsConfig    *tls.Config
 }
 
 func NewProxy(client *rancher.RancherClient, host, listen string) *Proxy {
@@ -31,6 +34,29 @@ func NewProxy(client *rancher.RancherClient, host, listen string) *Proxy {
 	}
 }
 
+func (p *Proxy) getSocket(url string) (net.Listener, error) {
+	proto := "tcp"
+	address := url
+
+	parts := strings.SplitN(url, "://", 2)
+	if len(parts) == 2 {
+		proto = parts[0]
+		address = parts[1]
+	}
+
+	l, err := net.Listen(proto, address)
+	if err != nil {
+		return nil, err
+	}
+
+	if proto == "tcp" && p.TlsConfig != nil {
+		p.TlsConfig.NextProtos = []string{"http/1.1"}
+		l = tls.NewListener(l, p.TlsConfig)
+	}
+
+	return l, err
+}
+
 func (p *Proxy) ListenAndServe() error {
 	host, err := p.getHost()
 	if err != nil {
@@ -39,7 +65,7 @@ func (p *Proxy) ListenAndServe() error {
 
 	os.Remove(p.listen)
 
-	l, err := net.Listen("unix", p.listen)
+	l, err := p.getSocket(p.listen)
 	if err != nil {
 		return err
 	}
@@ -146,7 +172,7 @@ func (p *Proxy) getHost() (*rancher.Host, error) {
 	}
 
 	if len(hosts.Data) == 0 {
-		return nil, fmt.Errorf("Failed to find host", p.host)
+		return nil, fmt.Errorf("Failed to find host: %s", p.host)
 	}
 
 	return &hosts.Data[0], nil
