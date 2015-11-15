@@ -78,7 +78,7 @@ func (p *Proxy) ListenAndServe() error {
 			return err
 		}
 
-		logrus.Info("New connection")
+		logrus.Debug("New connection")
 		go p.handle(host, conn)
 	}
 }
