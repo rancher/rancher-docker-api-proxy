@@ -24,6 +24,7 @@ type Proxy struct {
 	client       *rancher.RancherClient
 	host, listen string
 	TlsConfig    *tls.Config
+	listener     net.Listener
 }
 
 func NewProxy(client *rancher.RancherClient, host, listen string) *Proxy {
@@ -32,6 +33,10 @@ func NewProxy(client *rancher.RancherClient, host, listen string) *Proxy {
 		host:   host,
 		listen: listen,
 	}
+}
+
+func (p *Proxy) Close() error {
+	return p.listener.Close()
 }
 
 func (p *Proxy) getSocket(url string) (net.Listener, error) {
@@ -69,6 +74,7 @@ func (p *Proxy) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
+	p.listener = l
 
 	logrus.Infof("Found host: %v", host.Name)
 
@@ -135,13 +141,6 @@ func (p *Proxy) copyLoop(from, to IoOps) error {
 		if err != nil {
 			return err
 		}
-		//if err != nil {
-		//	if err == io.EOF {
-		//		con = false
-		//	} else {
-		//		return err
-		//	}
-		//}
 		logrus.Debugf("Read %d bytes", len(buf))
 		if _, err := to.Write(buf); err != nil {
 			return err
@@ -164,11 +163,22 @@ func (p *Proxy) getHost() (*rancher.Host, error) {
 
 	hosts, err := p.client.Host.List(&rancher.ListOpts{
 		Filters: map[string]interface{}{
-			"name": p.host,
+			"uuid": p.host,
 		},
 	})
 	if err != nil {
 		return nil, err
+	}
+
+	if len(hosts.Data) == 0 {
+		hosts, err = p.client.Host.List(&rancher.ListOpts{
+			Filters: map[string]interface{}{
+				"name": p.host,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if len(hosts.Data) == 0 {
