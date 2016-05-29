@@ -25,6 +25,7 @@ type Proxy struct {
 	host, listen string
 	TlsConfig    *tls.Config
 	listener     net.Listener
+	rancherHost  *rancher.Host
 }
 
 func NewProxy(client *rancher.RancherClient, host, listen string) *Proxy {
@@ -49,6 +50,10 @@ func (p *Proxy) getSocket(url string) (net.Listener, error) {
 		address = parts[1]
 	}
 
+	if proto == "unix" {
+		os.Remove(address)
+	}
+
 	l, err := net.Listen(proto, address)
 	if err != nil {
 		return nil, err
@@ -62,7 +67,7 @@ func (p *Proxy) getSocket(url string) (net.Listener, error) {
 	return l, err
 }
 
-func (p *Proxy) ListenAndServe() error {
+func (p *Proxy) Listen() error {
 	host, err := p.getHost()
 	if err != nil {
 		return err
@@ -74,19 +79,29 @@ func (p *Proxy) ListenAndServe() error {
 	if err != nil {
 		return err
 	}
+
 	p.listener = l
+	p.rancherHost = host
+	return nil
+}
 
-	logrus.Infof("Found host: %v", host.Name)
-
+func (p *Proxy) Serve() error {
 	for {
-		conn, err := l.Accept()
+		conn, err := p.listener.Accept()
 		if err != nil {
 			return err
 		}
 
 		logrus.Debug("New connection")
-		go p.handle(host, conn)
+		go p.handle(p.rancherHost, conn)
 	}
+}
+
+func (p *Proxy) ListenAndServe() error {
+	if err := p.Listen(); err != nil {
+		return err
+	}
+	return p.Serve()
 }
 
 func (p *Proxy) handle(host *rancher.Host, client net.Conn) {
