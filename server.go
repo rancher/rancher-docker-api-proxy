@@ -12,7 +12,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/websocket"
 	"github.com/rancher/go-rancher/hostaccess"
-	rancher "github.com/rancher/go-rancher/v2"
+	rancher "github.com/rancher/go-rancher/v3"
 )
 
 type IoOps interface {

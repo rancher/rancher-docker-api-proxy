@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	rancher "github.com/rancher/go-rancher/v2"
+	rancher "github.com/rancher/go-rancher/v3"
 )
 
 type Dialer func(network, addr string) (net.Conn, error)
