@@ -54,7 +54,7 @@ func (p *Proxy) getSocket(url string) (net.Listener, error) {
 		os.Remove(address)
 	}
 
-	l, err := net.Listen(proto, address)
+	l, err := getListener(proto, address)
 	if err != nil {
 		return nil, err
 	}
